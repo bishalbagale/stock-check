@@ -1,0 +1,109 @@
+#!/bin/bash
+
+#####################################################################################################################
+#														    #
+#						HELP								    #
+#														    #
+#####################################################################################################################
+
+Help()
+{
+echo " Syntax: stock-check [-c|t|h]"
+echo
+echo " options: "
+echo "	-c		company symbol [required!]"
+echo " 	-t		time(sec).. check stock vlaue in every t(sec) [optional / default 300s ]"
+echo "	-T		threshold value of stock price for the notification to be sent [optional / default 0]"
+echo " 	-h		to view this help menu"
+echo
+echo " example1: stock-check -c XYZ -t 300"
+echo " 		notifies stock value of XYZ every 300s i.e.5 min "
+echo
+echo " example2: stock-check -c XYZ -t 300 -T 2000"
+echo "		checks the stock value every 300s but notifies only when the vlaue exceeds or equals 2000 "
+echo
+echo "NOTE: PLEASE MAKE SURE YOU HAVE telegram-send INSTALLED AND CONFIGURED IN YOUR SYSTEM."
+echo
+
+
+}
+
+#####################################################################################################################
+#														    #
+#						processing input flags						    #
+#														    #
+#####################################################################################################################
+
+while getopts c:t:h:T:-help flag
+do
+	case "${flag}" in
+		c) company=${OPTARG};;
+		t) timeInterval=${OPTARG};;
+		T) threshold=${OPTARG};;
+		h | -help) 
+			Help
+			exit;;
+		\?) 
+			echo
+			echo " Error: Invalid Option. "
+			echo
+			Help
+			exit;;
+	esac
+done
+
+####################################################################################################################
+#														   #
+#						telegram-send function						   #
+#														   #
+####################################################################################################################
+
+Tg-send()
+{
+
+telegram-send "$1"
+
+}
+
+
+
+
+
+######################################################################################################################
+#														     #
+#						main script							     #
+#														     #
+######################################################################################################################
+
+if [ -z ${timeInterval+x} ]; then		#if -t flag is not supplied then defaults 300s
+	timeInterval=300
+fi
+if [ -z ${threshold+x} ]; then
+	threshold=0
+	
+fi
+
+if [ -z ${company+x} ]; then			#if -c flag is not given throw error!!
+	echo
+	Help
+else
+       	while true ; do				#scrape current value of supplied stock
+		response="$(curl -s  "https://merolagani.com/CompanyDetail.aspx?symbol=$company" -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:93.0) Gecko/20100101 Firefox/93.0')"
+		Value="$(sed -n 's:.*<span id="ctl00_ContentPlaceHolder1_CompanyDetail1_lblMarketPrice" class="text-increase">\(.*\)</span>.*:\1:p' <<<"$response")"
+		if [ -z ${Value} ]; then
+			Value="$(sed -n 's:.*<span id="ctl00_ContentPlaceHolder1_CompanyDetail1_lblMarketPrice" class="text-decrease">\(.*\)</span>.*:\1:p' <<<"$response")" 
+		fi
+		currentValue=$(sed -e "s/,/""/g" <<<"$Value" || "$Value")
+		if [ -z ${currentValue} ]; then
+			Tg-send " Invalid company code!"
+			exit
+		fi
+		if [ ${currentValue%.*} -gt $threshold ]; then
+			Tg-send "value: $currentValue"
+		fi
+		sleep $timeInterval
+	done
+
+	
+fi
+
