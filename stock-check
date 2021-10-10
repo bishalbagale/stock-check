@@ -8,7 +8,7 @@
 
 Help()
 {
-echo " Syntax: stock-check [-c|t|h]"
+echo " Syntax: stock-check [-c|t|T|h]"
 echo
 echo " options: "
 echo "	-c		company symbol [required!]"
@@ -40,10 +40,10 @@ do
 		c) company=${OPTARG};;
 		t) timeInterval=${OPTARG};;
 		T) threshold=${OPTARG};;
-		h | -help) 
+		h) 
 			Help
 			exit;;
-		\?) 
+		\? | -help) 
 			echo
 			echo " Error: Invalid Option. "
 			echo
