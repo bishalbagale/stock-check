@@ -40,10 +40,10 @@ do
 		c) company=${OPTARG};;
 		t) timeInterval=${OPTARG};;
 		T) threshold=${OPTARG};;
-		h) 
+		h | -help) 
 			Help
 			exit;;
-		\? | -help) 
+		\?) 
 			echo
 			echo " Error: Invalid Option. "
 			echo
